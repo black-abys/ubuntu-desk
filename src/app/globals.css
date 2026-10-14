@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root { color-scheme: dark; }
+body {
+  background: radial-gradient(1200px 600px at 10% -10%, rgba(16,185,129,.18), transparent 60%),
+              radial-gradient(900px 500px at 110% 10%, rgba(99,102,241,.22), transparent 60%),
+              #05070d;
+  color: #e6edf7;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.glass { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(14px); }
+.grid-bg { background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 32px 32px; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+.rise { animation: rise .45s ease-out both; }
+@keyframes pulsering { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,.6) } 100% { box-shadow: 0 0 0 18px rgba(16,185,129,0) } }
+.pulsering { animation: pulsering 1.2s infinite; }
