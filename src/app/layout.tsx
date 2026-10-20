@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ubuntu Desk — multilingual municipal AI agent",
-  description: "OpenEdge + Progress Agentic RAG demo",
+  title: "Ubuntu Desk — municipal services demo",
+  description: "Simulated multilingual municipal assistant. Not a live municipal connection.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
