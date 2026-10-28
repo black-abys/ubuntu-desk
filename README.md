@@ -1,5 +1,6 @@
 <h1 align="center">Ubuntu Desk</h1>
 <p align="center">Ask in your own language. See the maths. Confirm the dispute.</p>
+<p align="center"><strong>Team members:</strong> Katlego Mokwena (Creative Director &amp; Brand Strategist) and Prince (Systems/AI Engineer), CortexLab.</p>
 
 <p align="center">
   <a href="https://github.com/black-abys/ubuntu-desk/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/black-abys/ubuntu-desk/actions/workflows/ci.yml/badge.svg" /></a>
@@ -8,6 +9,10 @@
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
   <img alt="11 South African languages" src="https://img.shields.io/badge/11-SA%20languages-1d1d1f" />
   <img alt="Demo · simulated data" src="https://img.shields.io/badge/Demo-simulated%20data-b8860b" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/black-abys/ubuntu-desk/blob/main/demo/ubuntu-desk-demo.mp4"><strong>▶ Demo video (2–3 min)</strong></a>
 </p>
 
 <p align="center">
@@ -218,9 +223,11 @@ Open the app locally and use one of these URLs. `confirm=1` is a presentation sh
 | `/?workspace=scan&sample=1` | Opens Scan & Documents and loads the sample bill |
 | `/?workspace=dashboard` | Simulated case list |
 
-## Team
+## Team members
 
-Katlego Mokwena — GitHub [@black-abys](https://github.com/black-abys), co-founder at CortexLab.
+Katlego Mokwena (Creative Director & Brand Strategist) and Prince (Systems/AI Engineer), CortexLab.
+
+Katlego Mokwena — GitHub [@black-abys](https://github.com/black-abys).
 
 ## Screenshots
 
