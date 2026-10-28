@@ -1,3 +1,72 @@
+<h1 align="center">Ubuntu Desk</h1>
+<p align="center">Ask in your own language. See the maths. Confirm the dispute.</p>
+
+<p align="center">
+  <a href="https://github.com/black-abys/ubuntu-desk/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/black-abys/ubuntu-desk/actions/workflows/ci.yml/badge.svg" /></a>
+  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white" />
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
+  <img alt="11 South African languages" src="https://img.shields.io/badge/11-SA%20languages-1d1d1f" />
+  <img alt="Demo · simulated data" src="https://img.shields.io/badge/Demo-simulated%20data-b8860b" />
+</p>
+
+<p align="center">
+  <img src="screenshots/demo.gif" alt="isiZulu autorun: the desk checks the bill, cites the cap, and stops before submit" width="880" />
+</p>
+
+### Why it matters
+
+A resident in this demo is looking at an electricity bill that moved from about R1,200 to R3,107, with an estimated reading and no explanation in their language. Ubuntu Desk shows the working: a deterministic check against the cited 20% cap (§14.3), and a dispute that is stored only after the resident confirms. Account lookup, policy answers, and OCR are simulated and labelled on screen, so what you see is a product demo, not a claim of a live municipality.
+
+### What judges should try (60 seconds)
+
+From `http://localhost:3000` after `npm run dev`:
+
+1. [`/?autorun=1&lang=zu&fast=1`](http://localhost:3000/?autorun=1&lang=zu&fast=1) — isiZulu runs and stops on the unchecked confirm box. Find **R1,633.85** and **§14.3**.
+2. [`/?autorun=1&lang=af&fast=1`](http://localhost:3000/?autorun=1&lang=af&fast=1) and [`/?autorun=1&lang=xh&fast=1`](http://localhost:3000/?autorun=1&lang=xh&fast=1) — the same finding in Afrikaans and isiXhosa, marked machine-translated.
+3. [`/?workspace=scan&sample=1`](http://localhost:3000/?workspace=scan&sample=1) — the bundled sample bill. OCR is simulated.
+4. Type `hello` and send it. You get a help reply, and no billing finding.
+5. Change the account to anything other than `JHB-4471-0093` and ask about the bill. The account is not found.
+
+Presenting on site? The three-minute script is [PITCH.md](PITCH.md).
+
+### Gallery
+
+| | |
+|---|---|
+| Resident screen | isiZulu finding, still unconfirmed |
+| <img alt="Resident screen" src="screenshots/01-hero-desktop.png" width="640" /> | <img alt="isiZulu finding with R1,633.85 and section 14.3" src="screenshots/02-zu-finding.png" width="640" /> |
+| Step-by-step calculation | Scan and the sample bill |
+| <img alt="Calculation steps" src="screenshots/03-bill-maths.png" width="640" /> | <img alt="Scan workspace with the sample bill" src="screenshots/04-scan.png" width="640" /> |
+| After confirm: DEMO-DSP, Submitted (simulated) | Municipal dashboard |
+| <img alt="Submitted simulated case" src="screenshots/05-dispute-lifecycle.png" width="640" /> | <img alt="Municipal dashboard" src="screenshots/06-dashboard.png" width="640" /> |
+| isiZulu, Afrikaans, and isiXhosa | Mobile, 390 wide |
+| <img alt="Language picker in three languages" src="screenshots/07-languages.png" width="640" /> | <img alt="Mobile resident screen" src="screenshots/08-mobile.png" width="390" /> |
+
+### How the demo is wired
+
+```mermaid
+flowchart LR
+  Resident["Resident app"] --> Investigate --> Calculate --> Verify --> Approve --> Confirm
+  Confirm --> Adapters
+  Adapters --> OpenEdge["OpenEdge - simulated today"]
+  Adapters --> RAG["Agentic RAG - simulated today"]
+  Adapters --> OCR["OCR - simulated"]
+```
+
+The resident app is the Next.js workspace. The pipeline is the rule-based agent: it investigates only a bill or an account, calculates in `src/lib/billing.ts`, verifies against fixture clauses, and waits for the resident to approve. Adapters are the seams. OpenEdge, Agentic RAG, and OCR are simulated today. The real adapter files are scaffolds, not a live municipal connection.
+
+### Responsible AI
+
+- The overcharge is deterministic code. The same demo account always produces **R1,633.85**. A model does not invent the balance.
+- The cap check cites the clause it used (§14.3). Retrieval groundedness is a demo score, not a legal conclusion, and it is separate from speech-recognition confidence.
+- A dispute is written only after the resident ticks the confirm box. The server rejects a submit without that confirmation.
+- The server also rejects an amount that is zero, negative, non-numeric, or above the calculated potential overcharge.
+- Simulated account data, simulated OCR, simulated policy answers, and simulated case ids (`DEMO-DSP-…`) stay labelled in the interface.
+- Nothing here suspends collection or files a case with a municipality.
+
+---
+
 # Ubuntu Desk 🇿🇦
 
 **A multilingual municipal services demo for the AIGS / Progress OpenEdge Innovation Challenge 2026.**
@@ -155,11 +224,11 @@ Katlego Mokwena — GitHub [@black-abys](https://github.com/black-abys), co-foun
 
 ## Screenshots
 
-The resident workspace: idle, then the isiZulu and Sesotho demos stopped on the confirmation step. Scan & Documents is the `/?workspace=scan&sample=1` URL.
+The current light-theme set is the gallery at the top: the resident screen, the isiZulu finding stopped before submit, the calculation, Scan & Documents at `/?workspace=scan&sample=1`, the simulated dispute lifecycle, the dashboard, three languages, and mobile.
 
-| Idle | isiZulu flow | Sesotho flow |
+| Resident | isiZulu finding | Scan |
 |---|---|---|
-| ![](screenshots/01-idle.png) | ![](screenshots/02-flow-zu.png) | ![](screenshots/03-flow-st.png) |
+| ![](screenshots/01-hero-desktop.png) | ![](screenshots/02-zu-finding.png) | ![](screenshots/04-scan.png) |
 
 ## Project layout
 
