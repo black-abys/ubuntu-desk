@@ -4,24 +4,28 @@ import type { DisputeStatus } from "@/lib/types";
 export default function Lifecycle({ status }: { status: DisputeStatus }) {
   const current = DISPUTE_FLOW.indexOf(status);
   return (
-    <ol className="flex flex-wrap items-center gap-x-1 gap-y-2" aria-label="Case lifecycle">
+    <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-2" aria-label="Case lifecycle">
       {DISPUTE_FLOW.map((item, index) => {
         const state = index === current ? "current" : index < current ? "done" : "upcoming";
         return (
-          <li key={item} className="flex items-center gap-1">
+          <li key={item} className="flex items-center gap-1.5">
             <span
-              className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+              className={`rounded-full px-3 py-1 text-[13px] font-medium leading-snug ${
                 state === "current"
-                  ? "bg-emerald-400 text-black"
+                  ? "bg-ink text-white"
                   : state === "done"
-                    ? "bg-emerald-400/15 text-emerald-200"
-                    : "bg-white/5 text-slate-500"
+                    ? "bg-[#e8e8ed] text-ink"
+                    : "bg-white text-muted ring-1 ring-black/10"
               }`}
               aria-current={state === "current" ? "step" : undefined}
             >
               {STATUS_LABEL[item]}
             </span>
-            {index < DISPUTE_FLOW.length - 1 && <span className="px-0.5 text-slate-600" aria-hidden="true">→</span>}
+            {index < DISPUTE_FLOW.length - 1 && (
+              <span className="text-muted" aria-hidden="true">
+                →
+              </span>
+            )}
           </li>
         );
       })}

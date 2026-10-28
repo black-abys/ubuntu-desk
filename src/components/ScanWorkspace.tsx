@@ -191,21 +191,21 @@ export default function ScanWorkspace({
   const visible = documents.filter((doc) => filter === "all" || doc.category === filter);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-12">
-      <section className="glass rounded-2xl p-4 sm:p-5 lg:col-span-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-medium text-slate-300">Scan a document</h2>
-          <span className="rounded-full bg-amber-300/15 px-2.5 py-1 text-[11px] text-amber-200">Simulated OCR</span>
+    <div className="grid items-start gap-6 lg:grid-cols-12">
+      <section className="card p-5 sm:p-6 lg:col-span-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="section-title">Scan a document</h2>
+          <span className="honesty">Simulated OCR</span>
         </div>
-        <p className="mb-4 text-xs leading-relaxed text-slate-400">
+        <p className="quiet mb-5">
           Capture a photo or upload a bill, meter photo, receipt, or PDF. Files stay in this demo vault. Their text is not sent to a model. OCR stays simulated until a real provider is connected.
         </p>
-        <label className="mb-3 block text-xs text-slate-400">
+        <label className="mb-4 block text-[13px] font-semibold text-muted">
           Category
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value as DocumentCategory)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100"
+            className="field mt-1.5"
           >
             {CATEGORIES.map((item) => (
               <option key={item.id} value={item.id}>{item.label}</option>
@@ -214,51 +214,51 @@ export default function ScanWorkspace({
         </label>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button type="button" onClick={() => save({ useSample: true, category: "bill", fileName: "sample-municipal-bill.svg", mimeType: "image/svg+xml", byteSize: 0 })} disabled={busy}
-            className="rounded-xl bg-emerald-400 px-3 py-2 text-sm font-semibold text-black disabled:opacity-50">
+            className="btn-primary">
             Load sample bill
           </button>
-          <button type="button" onClick={cameraOn ? stopCamera : startCamera} className="rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-100">
+          <button type="button" onClick={cameraOn ? stopCamera : startCamera} className="btn-secondary">
             {cameraOn ? "Close camera" : "Open camera"}
           </button>
-          <label className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-center text-sm text-slate-100">
+          <label className="btn-secondary cursor-pointer">
             Upload image or PDF
             <input type="file" accept="image/*,application/pdf,.pdf,.svg" className="sr-only" onChange={(event) => void onFile(event.target.files?.[0])} />
           </label>
         </div>
-        {cameraError && <p className="mt-3 text-xs text-amber-200" role="alert">{cameraError}</p>}
+        {cameraError && <p className="notice mt-4 px-3.5 py-3 text-[13px] leading-relaxed" role="alert">{cameraError}</p>}
         {cameraOn && (
-          <div className="mt-4 space-y-2">
-            <video ref={videoRef} playsInline muted className="aspect-[4/3] w-full rounded-xl bg-black object-cover" />
-            <button type="button" onClick={capture} className="w-full rounded-xl bg-white/10 py-2 text-sm">Capture frame</button>
+          <div className="mt-4 space-y-3">
+            <video ref={videoRef} playsInline muted className="aspect-[4/3] w-full rounded-2xl bg-ink object-cover" />
+            <button type="button" onClick={capture} className="btn-secondary w-full">Capture frame</button>
           </div>
         )}
         {pending && (
-          <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-3 text-xs">
-            <div className="font-medium text-slate-200">{pending.name}</div>
-            <p className="mt-1 text-slate-500">Ready to store in the demo vault. Saving a bill runs simulated extraction.</p>
+          <div className="inset mt-4 p-4 text-[14px]">
+            <div className="font-medium text-ink">{pending.name}</div>
+            <p className="quiet mt-1">Ready to store in the demo vault. Saving a bill runs simulated extraction.</p>
             {pending.dataUrl && (
               // User-captured data URLs are not served by the image optimizer.
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={pending.dataUrl} alt="Captured frame preview" className="mt-3 max-h-48 w-full rounded-lg object-contain" />
+              <img src={pending.dataUrl} alt="Captured frame preview" className="mt-3 max-h-48 w-full rounded-xl bg-white object-contain" />
             )}
             <button type="button" disabled={busy} onClick={() => save({ ...pending, fileName: pending.name, category, dataUrl: pending.dataUrl, useSample: false })}
-              className="mt-3 w-full rounded-xl bg-gradient-to-r from-emerald-400 to-indigo-500 py-2 text-sm font-semibold text-black disabled:opacity-50">
+              className="btn-primary mt-3 w-full">
               {busy ? "Saving…" : "Save to vault"}
             </button>
           </div>
         )}
-        {error && <p className="mt-3 text-xs text-rose-300" role="alert">{error}</p>}
+        {error && <p className="alert mt-4 px-3.5 py-3 text-[13px] leading-relaxed" role="alert">{error}</p>}
       </section>
 
-      <section className="glass rounded-2xl p-4 sm:p-5 lg:col-span-7" aria-live="polite">
-        <h2 className="mb-3 text-sm font-medium text-slate-300">Latest extraction</h2>
-        {!active?.extraction && <p className="text-sm text-slate-500">Load the sample bill to extract an account number, period, and total. Other categories are stored without bill maths.</p>}
+      <section className="card p-5 sm:p-6 lg:col-span-7" aria-live="polite">
+        <h2 className="section-title mb-4">Latest extraction</h2>
+        {!active?.extraction && <p className="text-[15px] leading-relaxed text-muted">Load the sample bill to extract an account number, period, and total. Other categories are stored without bill maths.</p>}
         {active?.extraction && (
-          <div className="space-y-3">
-            <div className="rounded-xl border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-50">
+          <div className="space-y-4">
+            <div className="notice px-4 py-3 text-[14px] leading-relaxed">
               {basisCopy(active.extraction)}
             </div>
-            <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-2 text-[15px] sm:grid-cols-2">
               <Field label="Account" value={active.extraction.accountNo} />
               <Field label="Holder" value={active.extraction.holder} />
               <Field label="Period" value={active.extraction.period} />
@@ -266,38 +266,38 @@ export default function ScanWorkspace({
               <Field label="Total" value={active.extraction.total != null ? formatRand(active.extraction.total) : null} />
               <Field label="Estimated" value={active.extraction.estimated == null ? null : active.extraction.estimated ? "yes" : "no"} />
             </dl>
-            <p className="text-[11px] leading-relaxed text-slate-500">
+            <p className="quiet">
               {active.extraction.fieldConfidence == null
                 ? "OCR field confidence: not available. No engine scored a real read of this file."
                 : `Text-match confidence: ${Math.round(active.extraction.fieldConfidence * 100)}%. This only counts labelled text found in the file. It is not speech confidence, retrieval groundedness, or a trust score.`}
             </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <label className="flex-1 text-xs text-slate-400">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <label className="flex-1 text-[13px] font-semibold text-muted">
                 Link to case
-                <select value={linkTo} onChange={(event) => setLinkTo(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100">
+                <select value={linkTo} onChange={(event) => setLinkTo(event.target.value)} className="field mt-1.5 font-normal">
                   {disputes.length === 0 && <option value="">No cases yet</option>}
                   {disputes.map((dispute) => (
                     <option key={dispute.disputeId} value={dispute.disputeId}>{dispute.disputeId} · {STATUS_LABEL[dispute.status]}</option>
                   ))}
                 </select>
               </label>
-              <button type="button" onClick={() => void linkActive()} disabled={!linkTo || linking} className="rounded-xl border border-white/15 px-3 py-2 text-sm sm:self-end">
+              <button type="button" onClick={() => void linkActive()} disabled={!linkTo || linking} className="btn-secondary">
                 {linking ? "Linking…" : "Link document"}
               </button>
             </div>
             {(active.previewPath || active.previewDataUrl) && (
               // Sample SVG and in-memory previews are local demo files, not remote assets.
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={active.previewDataUrl ?? active.previewPath ?? ""} alt={`Stored preview of ${active.fileName}`} className="max-h-80 w-full rounded-xl bg-[#f4f0e6] object-contain" />
+              <img src={active.previewDataUrl ?? active.previewPath ?? ""} alt={`Stored preview of ${active.fileName}`} className="max-h-80 w-full rounded-2xl bg-[#f4f0e6] object-contain" />
             )}
           </div>
         )}
       </section>
 
-      <section className="glass rounded-2xl p-4 sm:p-5 lg:col-span-12">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-medium text-slate-300">Document vault</h2>
-          <span className="text-[11px] text-slate-500">In-memory demo store · not municipal storage</span>
+      <section className="card p-5 sm:p-6 lg:col-span-12">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="section-title">Document vault</h2>
+          <span className="honesty">In-memory demo store · not municipal storage</span>
         </div>
         <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
           <FilterChip label="All" current={filter === "all"} onClick={() => setFilter("all")} />
@@ -305,19 +305,19 @@ export default function ScanWorkspace({
             <FilterChip key={item.id} label={item.label} current={filter === item.id} onClick={() => setFilter(item.id)} />
           ))}
         </div>
-        {visible.length === 0 && <p className="text-sm text-slate-500">Nothing in this category yet.</p>}
+        {visible.length === 0 && <p className="text-[15px] text-muted">Nothing in this category yet.</p>}
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((doc) => (
             <li key={doc.documentId}>
-              <button type="button" onClick={() => setActiveId(doc.documentId)} className={`w-full rounded-xl border p-3 text-left ${doc.documentId === active?.documentId ? "border-emerald-400/50 bg-emerald-400/10" : "border-white/10 bg-black/30"}`}>
-                <div className="flex items-start justify-between gap-2">
+              <button type="button" onClick={() => setActiveId(doc.documentId)} className={`w-full rounded-2xl border p-4 text-left ${doc.documentId === active?.documentId ? "border-ink bg-paper" : "border-black/10 bg-white"}`}>
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{doc.fileName}</div>
-                    <div className="mt-1 text-[11px] uppercase tracking-wide text-slate-500">{doc.category} · {doc.documentId}</div>
+                    <div className="truncate text-[15px] font-medium">{doc.fileName}</div>
+                    <div className="quiet mt-1">{doc.category} · {doc.documentId}</div>
                   </div>
-                  {doc.extraction?.simulated && <span className="shrink-0 rounded-full bg-amber-300/15 px-2 py-0.5 text-[10px] text-amber-200">Simulated OCR</span>}
+                  {doc.extraction?.simulated && <span className="honesty shrink-0">Simulated OCR</span>}
                 </div>
-                <p className="mt-2 text-xs text-slate-400">
+                <p className="quiet mt-2">
                   {doc.linkedDisputeId ? `Linked to ${doc.linkedDisputeId}` : "Not linked to a case"}
                   {doc.extraction?.accountNo ? ` · ${doc.extraction.accountNo}` : ""}
                 </p>
@@ -332,16 +332,16 @@ export default function ScanWorkspace({
 
 function Field({ label, value }: { label: string; value: string | null }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-      <dt className="text-[10px] uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className="text-slate-100">{value ?? "—"}</dd>
+    <div className="inset px-3.5 py-2.5">
+      <dt className="text-[12px] font-semibold text-muted">{label}</dt>
+      <dd className="nums text-ink">{value ?? "—"}</dd>
     </div>
   );
 }
 
 function FilterChip({ label, current, onClick }: { label: string; current: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className={`shrink-0 rounded-full px-3 py-1 text-xs ${current ? "bg-emerald-400 text-black" : "glass text-slate-300"}`}>
+    <button type="button" onClick={onClick} aria-pressed={current} className="chip">
       {label}
     </button>
   );
