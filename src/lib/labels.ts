@@ -4,7 +4,7 @@ export const DISPUTE_FLOW: DisputeStatus[] = ["draft", "submitted", "under_revie
 
 export const STATUS_LABEL: Record<DisputeStatus, string> = {
   draft: "Draft",
-  submitted: "Submitted",
+  submitted: "Submitted (simulated)",
   under_review: "Under review",
   resolved: "Resolved",
 };

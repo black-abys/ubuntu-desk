@@ -23,6 +23,8 @@ export interface Dispute {
   createdAt: string;
   language: Lang;
   documentId?: string | null;
+  /** True when the case lives only in the demo adapter. */
+  simulated: boolean;
 }
 
 export interface Citation {
@@ -40,11 +42,15 @@ export interface RagAnswer {
   simulated?: boolean;
 }
 
+export type AccountLookup =
+  | { found: true; account: Account }
+  | { found: false; accountNo: string; error: "account not found" };
+
 /** System of record: PASOE REST when a tested OpenEdge connection exists. */
 export interface OpenEdgeClient {
-  getAccount(accountNo: string): Promise<Account>;
+  getAccount(accountNo: string): Promise<AccountLookup>;
   createDispute(
-    d: Omit<Dispute, "disputeId" | "createdAt"> & { status?: DisputeStatus },
+    d: Omit<Dispute, "disputeId" | "createdAt" | "simulated"> & { status?: DisputeStatus },
   ): Promise<Dispute>;
   updateDispute(
     disputeId: string,
@@ -191,9 +197,11 @@ export interface AgentResult {
   support: "full" | "stub";
   simulated: true;
   steps: AgentStep[];
-  account: Account;
+  /** Null when the message was not a billing query, or the account was not found. */
+  account: Account | null;
   rag: RagAnswer;
-  analysis: BillAnalysis;
+  /** Null when no billing investigation was run. */
+  analysis: BillAnalysis | null;
   draft: DisputeDraft | null;
   dispute: Dispute | null;
   reply: string;

@@ -1,8 +1,10 @@
 import { openedgeClient, ragClient } from "@/lib/adapters";
 import { analyseAccount, formatRand } from "@/lib/billing";
+import { DEMO_ACCOUNT_NO } from "@/lib/demo";
+import { helpReply, isBillingQuery, missingAccountReply } from "@/lib/intent";
 import { languageByCode } from "@/lib/languages";
 import { backendMode } from "@/lib/mode";
-import type { AgentResult, AgentStep, BillContext, Lang } from "@/lib/types";
+import type { Account, AgentResult, AgentStep, BillAnalysis, BillContext, DisputeDraft, Lang, RagAnswer } from "@/lib/types";
 
 const replies: Record<"en" | "zu" | "st", (amount: string) => string> = {
   zu: (amount) =>
@@ -13,9 +15,44 @@ const replies: Record<"en" | "zu" | "st", (amount: string) => string> = {
     `Hi! Simulated records show a potential billing error: the September reading was estimated and is above the 20% cap in the by-law. The difference on this demo account is ${amount}. This is not confirmed until municipal records agree. Confirm below if you want a dispute submitted.`,
 };
 
+const NO_RAG: RagAnswer = {
+  answer: "",
+  citations: [],
+  remi: { answerRelevance: 0, contextRelevance: 0, groundedness: 0 },
+  simulated: true,
+};
+
 function comingSoonReply(lang: Lang, summary: string): string {
   const name = languageByCode(lang).label;
   return `Coming soon for ${name}. Ubuntu Desk does not yet have a reviewed ${name} reply or a voice response in that language, so this is not a translation. ${summary}`;
+}
+
+function resultOf(input: {
+  text: string;
+  lang: Lang;
+  support: AgentResult["support"];
+  steps: AgentStep[];
+  account: Account | null;
+  rag: RagAnswer;
+  analysis: BillAnalysis | null;
+  draft: DisputeDraft | null;
+  reply: string;
+  replyMode: AgentResult["replyMode"];
+}): AgentResult {
+  return {
+    transcript: input.text,
+    lang: input.lang,
+    support: input.support,
+    simulated: true,
+    steps: input.steps,
+    account: input.account,
+    rag: input.rag,
+    analysis: input.analysis,
+    draft: input.draft,
+    dispute: null,
+    reply: input.reply,
+    replyMode: input.replyMode,
+  };
 }
 
 export async function runAgent(input: {
@@ -36,6 +73,28 @@ export async function runAgent(input: {
   const support = info.support;
 
   step("listen", "Heard the resident", `“${input.text || "(empty message)"}”`);
+
+  if (!isBillingQuery(input.text)) {
+    const help = helpReply(input.lang);
+    step(
+      "reply",
+      help.replyMode === "demo-script" ? "Replied with what the desk can help with" : "Placeholder reply only",
+      "The message is not about a bill or an account, so no account was loaded and no billing finding was made.",
+    );
+    return resultOf({
+      text: input.text,
+      lang: input.lang,
+      support,
+      steps,
+      account: null,
+      rag: NO_RAG,
+      analysis: null,
+      draft: null,
+      reply: help.reply,
+      replyMode: help.replyMode,
+    });
+  }
+
   if (support === "full") {
     step(
       "translate",
@@ -50,10 +109,31 @@ export async function runAgent(input: {
     );
   }
 
-  const [account, rag] = await Promise.all([
-    openedgeClient.getAccount(input.accountNo),
-    ragClient.ask("Rules for estimated electricity readings and billing disputes", { lang: input.lang }),
-  ]);
+  const lookup = await openedgeClient.getAccount(input.accountNo);
+  if (!lookup.found) {
+    const missing = missingAccountReply(input.lang, lookup.accountNo);
+    step(
+      "lookup",
+      "Account not found",
+      `No simulated OpenEdge account for ${lookup.accountNo}. The demo account is ${DEMO_ACCOUNT_NO}.`,
+    );
+    step("reply", "Told the resident the account was not found", "No billing finding was made.");
+    return resultOf({
+      text: input.text,
+      lang: input.lang,
+      support,
+      steps,
+      account: null,
+      rag: NO_RAG,
+      analysis: null,
+      draft: null,
+      reply: missing.reply,
+      replyMode: missing.replyMode,
+    });
+  }
+
+  const account = lookup.account;
+  const rag = await ragClient.ask("Rules for estimated electricity readings and billing disputes", { lang: input.lang });
 
   step(
     "lookup",
@@ -107,18 +187,16 @@ export async function runAgent(input: {
       : `No reviewed ${info.label} reply for this outcome. Nothing fluent is generated.`,
   );
 
-  return {
-    transcript: input.text,
+  return resultOf({
+    text: input.text,
     lang: input.lang,
     support,
-    simulated: true,
     steps,
     account,
     rag: { ...rag, simulated: rag.simulated === true || backendMode().rag === "simulated" },
     analysis,
     draft,
-    dispute: null,
     reply,
     replyMode: reviewedScript ? "demo-script" : "coming-soon",
-  };
+  });
 }

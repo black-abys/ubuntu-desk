@@ -18,7 +18,7 @@ const accounts: Record<string, Account> = {
 
 const disputes: Dispute[] = [
   {
-    disputeId: "DSP-20931",
+    disputeId: "DEMO-DSP-20931",
     accountNo: "JHB-1102-7781",
     reason: "Duplicate refuse charge",
     amountDisputed: 312,
@@ -26,9 +26,10 @@ const disputes: Dispute[] = [
     createdAt: "2026-10-12T09:14:00+02:00",
     language: "en",
     documentId: null,
+    simulated: true,
   },
   {
-    disputeId: "DSP-20944",
+    disputeId: "DEMO-DSP-20944",
     accountNo: "JHB-3390-1204",
     reason: "Estimated water reading",
     amountDisputed: 860,
@@ -36,9 +37,10 @@ const disputes: Dispute[] = [
     createdAt: "2026-10-13T15:40:00+02:00",
     language: "st",
     documentId: null,
+    simulated: true,
   },
   {
-    disputeId: "DSP-20951",
+    disputeId: "DEMO-DSP-20951",
     accountNo: "JHB-5521-0042",
     reason: "Wrong tariff band",
     amountDisputed: 1490,
@@ -46,6 +48,7 @@ const disputes: Dispute[] = [
     createdAt: "2026-10-13T17:02:00+02:00",
     language: "zu",
     documentId: null,
+    simulated: true,
   },
 ];
 let seq = 20960;
@@ -58,13 +61,18 @@ const NEXT: Partial<Record<DisputeStatus, DisputeStatus>> = {
 
 export const mockOpenEdge: OpenEdgeClient = {
   async getAccount(no) {
-    const account = accounts[no] ?? accounts["JHB-4471-0093"];
-    return structuredClone(account);
+    const accountNo = no.trim().toUpperCase();
+    const account = accounts[accountNo];
+    if (!account) {
+      return { found: false, accountNo: accountNo || no.trim(), error: "account not found" };
+    }
+    return { found: true, account: structuredClone(account) };
   },
   async createDispute(d) {
     const rec: Dispute = {
       ...d,
-      disputeId: `DSP-${++seq}`,
+      disputeId: `DEMO-DSP-${++seq}`,
+      simulated: true,
       status: d.status ?? "submitted",
       createdAt: new Date().toISOString(),
       documentId: d.documentId ?? null,

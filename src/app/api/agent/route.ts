@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { openedgeClient } from "@/lib/adapters";
 import { runAgent } from "@/lib/agent";
+import { DEMO_ACCOUNT_NO } from "@/lib/demo";
 import { isLang } from "@/lib/languages";
 import type { BillContext } from "@/lib/types";
 
@@ -31,10 +32,11 @@ export async function POST(req: Request) {
   if (!body) return NextResponse.json({ error: "Expected JSON" }, { status: 400 });
   const requestedLang = typeof body.lang === "string" ? body.lang : null;
   const lang = isLang(requestedLang) ? requestedLang : "en";
+  const requestedAccount = typeof body.accountNo === "string" ? body.accountNo.trim().slice(0, 40) : "";
   const result = await runAgent({
     text: String(body.text ?? "").slice(0, 2000),
     lang,
-    accountNo: String(body.accountNo ?? "JHB-4471-0093").slice(0, 40),
+    accountNo: requestedAccount || DEMO_ACCOUNT_NO,
     bill: billFrom(body),
   });
   return NextResponse.json(result);

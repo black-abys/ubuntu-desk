@@ -6,14 +6,18 @@ Residents get electricity and water bills they cannot explain. Estimated reading
 
 **This build is a labelled demo.** Account lookup, policy answers, billing checks, and OCR are simulated. It is not connected to a live municipality, and it does not claim that OpenEdge or Progress Agentic RAG are already answering in production. The product plan is [ROADMAP.md](ROADMAP.md). The competition schedule is [PLAN.md](PLAN.md).
 
+## Challenge use case
+
+Residents query and dispute municipal bills. They ask in their own language, see how the figure was checked, and confirm before a dispute is stored. Progress OpenEdge is the system of record for the account and the dispute. This section describes the use case this demo implements. It does not quote an official kick-off brief.
+
 ## What the demo does
 
 1. The resident picks one of the 11 official languages and sends text or speech.
-2. A rule-based agent loads a **simulated** account and **fixture** by-law clauses, then shows its steps.
+2. A rule-based agent loads a **simulated** account and **fixture** by-law clauses, then shows its steps. It does that only when the message is about a bill or an account (including the English, isiZulu, and Sesotho demo lines). Anything else gets a short reply about what the desk can help with, and no billing finding.
 3. English, isiZulu, and Sesotho get a reviewed demo script. The browser speaks it when that voice is available. The other eight languages get an English “coming soon” placeholder — the app does not invent a fluent reply.
 4. Scan & Documents accepts a camera frame, an upload, or the bundled sample bill. OCR is **simulated**. The file is kept in an in-memory vault and can be linked to a case.
 5. When a bill is present, the screen shows each calculation step and the tariff clause. A mismatch is a **potential billing error** until records confirm it.
-6. The resident must tick a confirmation before a dispute is submitted. The case then shows draft → submitted → under review → resolved. Staff status changes in the dashboard are simulated too.
+6. The resident must tick a confirmation before a dispute is submitted. The server rejects the dispute without that confirmation, and it rejects an amount that is zero, negative, non-numeric, or above the calculated potential overcharge for the account. Case ids are marked as demo ids (`DEMO-DSP-…`). The case then shows draft → submitted (simulated) → under review → resolved. Staff status changes in the dashboard are simulated too. The disputes API sets `simulated: true`.
 
 Speech-recognition confidence (from the browser, when it reports one) is shown separately from retrieval groundedness. Groundedness here is a demo score on the fixture answer. It is not proof of a translation or a legal conclusion.
 
@@ -91,6 +95,31 @@ flowchart LR
   UI --> DASH
 ```
 
+## Real vs simulated
+
+| Area | What this demo actually does |
+|---|---|
+| UI | Real Next.js app. The screens say when the data behind them is simulated. |
+| Bill calculation | Real, deterministic code in `src/lib/billing.ts`. The same inputs always produce the same figures. On the demo account the September estimated reading is a potential overcharge of R1,633.85. The R3.05/kWh rate is a demo constant, not a live tariff. |
+| OpenEdge | Simulated. `mock/openedge.ts` is the system-of-record stand-in. Unknown account numbers are not found. There is no live PASOE connection. |
+| Agentic RAG | Simulated. Fixture by-law clauses and fixture retrieval scores. Not Progress Agentic RAG. |
+| OCR | Simulated. It does not read pixels. The sample bill and labelled text in a file are the only sources. |
+| Document vault | Simulated process memory. It is cleared when the server restarts. |
+| Dispute submission | Simulated. Ids look like `DEMO-DSP-20961`, the response includes `simulated: true`, and the submitted state is labelled simulated. Nothing is sent to a municipality. |
+| Speech | The browser’s Web Speech API, when the device has a voice. A recognition score is the browser’s, not a municipal score. |
+| Translations | English, isiZulu, and Sesotho replies are demo scripts. They still need native-speaker review and are not certified translations. The other eight official languages stay on an English placeholder. |
+
+## Known limitations
+
+- One simulated household account: `JHB-4471-0093`, N. Dlamini. Any other account number returns account not found.
+- The assistant is a keyword check plus the billing rules. It is not a general chatbot and not a live model. A message that is not about a bill or an account does not produce a finding.
+- The cap check is deterministic, and it is not a municipal determination. It uses two actual readings and a blended demo rate.
+- OpenEdge, Agentic RAG, OCR, the document vault, and dispute submission are simulated. Restarting the server drops the vault and any disputes created in that process. The three seed cases come back from code.
+- A submitted case does not file anything with a municipality and does not suspend collection.
+- isiZulu and Sesotho demo scripts, including the short “what I can help with” lines, have not had a fresh native-speaker review in this change. Do not present them as certified translations.
+- Speech depends on the browser and the voices installed on the device.
+- There is no resident login. Do not enter real personal information.
+
 ## Setup
 
 Node 20 or newer.
@@ -101,7 +130,11 @@ npm run dev        # http://localhost:3000
 npm run build && npm start
 ```
 
-## Demo URLs
+## Usage
+
+Open the app locally and use one of these URLs. `confirm=1` is a presentation shortcut. In ordinary use the resident has to tick the box. `fast=1` skips the step delay and does not speak.
+
+### Demo URLs
 
 | URL | What it does |
 |---|---|
@@ -113,7 +146,9 @@ npm run build && npm start
 | `/?workspace=scan&sample=1` | Opens Scan & Documents and loads the sample bill |
 | `/?workspace=dashboard` | Simulated case list |
 
-`confirm=1` is a presentation shortcut. In ordinary use the resident has to tick the box. `fast=1` skips the step delay and does not speak.
+## Team
+
+Katlego Mokwena — GitHub [@black-abys](https://github.com/black-abys), co-founder at CortexLab.
 
 ## Screenshots
 
@@ -130,6 +165,7 @@ src/app/api/agent/route.ts       demo agent
 src/app/api/documents/route.ts   vault, simulated OCR, bill analysis
 src/app/api/disputes/route.ts    confirm, list, simulated status changes
 src/lib/agent.ts                 rule-based steps
+src/lib/intent.ts                bill or account check, and the off-topic reply
 src/lib/billing.ts               calculation shown in the UI
 src/lib/languages.ts             11 official languages
 src/lib/adapters/mock/           simulated OpenEdge, RAG, OCR, vault
