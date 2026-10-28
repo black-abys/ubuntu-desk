@@ -1,19 +1,11 @@
-import { openedgeClient, ragClient } from "@/lib/adapters";
-import { analyseAccount, formatRand } from "@/lib/billing";
-import { DEMO_ACCOUNT_NO } from "@/lib/demo";
-import { helpReply, isBillingQuery, missingAccountReply } from "@/lib/intent";
-import { languageByCode } from "@/lib/languages";
-import { backendMode } from "@/lib/mode";
-import type { Account, AgentResult, AgentStep, BillAnalysis, BillContext, DisputeDraft, Lang, RagAnswer } from "@/lib/types";
-
-const replies: Record<"en" | "zu" | "st", (amount: string) => string> = {
-  zu: (amount) =>
-    `Sawubona! Ngibona iphutha elingaba khona: ukufundwa kukaSeptemba bekuqagelwa futhi kudlula umkhawulo ka-20%. Umehluko kule demo ngu-${amount}. Lokhu akuqinisekisiwe — qinisekisa ngezansi ukuze uthumele isikhalazo.`,
-  st: (amount) =>
-    `Dumela! Ke bona phoso e ka bang teng: palo ya Loetse e ne e hakanngwa mme e feta moedi wa 20%. Phapang demo ena ke ${amount}. Ha e so netefatsoe — netefatsa ka tlase pele o romela tletlebo.`,
-  en: (amount) =>
-    `Hi! Simulated records show a potential billing error: the September reading was estimated and is above the 20% cap in the by-law. The difference on this demo account is ${amount}. This is not confirmed until municipal records agree. Confirm below if you want a dispute submitted.`,
-};
+import { openedgeClient, ragClient } from "./adapters";
+import { analyseAccount, formatRand } from "./billing";
+import { DEMO_ACCOUNT_NO } from "./demo";
+import { helpReply, isBillingQuery, missingAccountReply } from "./intent";
+import { languageByCode } from "./languages";
+import { backendMode } from "./mode";
+import { draftReason, findingReply, noErrorReply } from "./scripts";
+import type { Account, AgentResult, AgentStep, BillAnalysis, BillContext, DisputeDraft, Lang, RagAnswer } from "./types";
 
 const NO_RAG: RagAnswer = {
   answer: "",
@@ -95,7 +87,13 @@ export async function runAgent(input: {
     });
   }
 
-  if (support === "full") {
+  if (info.translation === "machine") {
+    step(
+      "translate",
+      "Understood the demo intent",
+      `${info.label} · machine-translated demo script, pending native-speaker review. Intent: billing query (electricity, high bill). This step is rule-based, not a live model.`,
+    );
+  } else if (support === "full") {
     step(
       "translate",
       "Understood the demo intent",
@@ -153,7 +151,7 @@ export async function runAgent(input: {
   const draft = analysis.isPotentialError
     ? {
         accountNo: account.accountNo,
-        reason: `Estimated reading appears to exceed the 20% cap (§14.3) for ${analysis.period}`,
+        reason: draftReason(input.lang, analysis.period),
         amountDisputed: analysis.overcharge,
         language: input.lang,
         documentId: input.bill?.documentId ?? null,
@@ -172,19 +170,27 @@ export async function runAgent(input: {
       ? "English demo summary: the bill account does not match the looked-up account, so no dispute was drafted."
       : "English demo summary: these simulated figures do not show a potential billing error.";
 
-  const reviewedScript = support === "full" && (analysis.isPotentialError || input.lang === "en");
-  const reply = !reviewedScript
-    ? comingSoonReply(input.lang, input.lang === "en" ? "Hi! On these simulated figures I do not see a potential billing error. Nothing has been submitted." : englishSummary)
-    : analysis.isPotentialError
-      ? replies[input.lang as "en" | "zu" | "st"](amount)
-      : "Hi! On these simulated figures I do not see a potential billing error. Nothing has been submitted.";
+  const reviewedScript = info.translation !== "machine" && support === "full" && (analysis.isPotentialError || input.lang === "en");
+  const machineScript = info.translation === "machine";
+  const reply = machineScript
+    ? analysis.isPotentialError
+      ? findingReply(input.lang, amount)
+      : noErrorReply(input.lang)
+    : !reviewedScript
+      ? comingSoonReply(input.lang, input.lang === "en" ? "Hi! On these simulated figures I do not see a potential billing error. Nothing has been submitted." : englishSummary)
+      : analysis.isPotentialError
+        ? findingReply(input.lang, amount)
+        : "Hi! On these simulated figures I do not see a potential billing error. Nothing has been submitted.";
+  const replyMode = machineScript || reviewedScript ? "demo-script" : "coming-soon";
 
   step(
     "reply",
-    reviewedScript ? "Replied with the demo script" : "Placeholder reply only",
-    reviewedScript
-      ? `${info.label} text. Speech plays in the browser when it allows ${info.bcp}.`
-      : `No reviewed ${info.label} reply for this outcome. Nothing fluent is generated.`,
+    replyMode === "demo-script" ? "Replied with the demo script" : "Placeholder reply only",
+    replyMode !== "demo-script"
+      ? `No reviewed ${info.label} reply for this outcome. Nothing fluent is generated.`
+      : machineScript
+        ? `${info.label} machine-translated text, pending native-speaker review. Speech uses ${info.bcp} when the browser has that voice, otherwise an English voice.`
+        : `${info.label} text. Speech plays in the browser when it allows ${info.bcp}.`,
   );
 
   return resultOf({
@@ -197,6 +203,6 @@ export async function runAgent(input: {
     analysis,
     draft,
     reply,
-    replyMode: reviewedScript ? "demo-script" : "coming-soon",
+    replyMode,
   });
 }

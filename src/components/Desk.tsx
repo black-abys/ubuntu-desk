@@ -122,10 +122,8 @@ export default function Desk() {
       }
       if (opts?.confirm && agentResult.draft) await submitDraft(agentResult.draft, true);
       const fast = params.get("fast");
-      if (!fast && agentResult.replyMode === "demo-script" && "speechSynthesis" in window) {
-        const utterance = new SpeechSynthesisUtterance(agentResult.reply);
-        utterance.lang = languageByCode(chosen).bcp;
-        window.speechSynthesis.speak(utterance);
+      if (!fast && agentResult.replyMode === "demo-script") {
+        speakReply(agentResult.reply, languageByCode(chosen).bcp);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "The demo agent could not run");
@@ -182,9 +180,21 @@ export default function Desk() {
       if (typeof heard.confidence === "number" && heard.confidence > 0) setSttConfidence(heard.confidence);
       else setSttNote("The browser did not report a speech-recognition confidence score.");
     };
-    recognition.onerror = () => setSttNote("Speech recognition stopped. You can still type.");
+    recognition.onerror = (event: { error?: string }) => {
+      setListening(false);
+      if (event?.error === "language-not-supported") {
+        setSttNote("This browser cannot transcribe this language. Type the message instead. Speech confidence is separate from retrieval groundedness.");
+        return;
+      }
+      setSttNote("Speech recognition stopped. You can still type.");
+    };
     recognition.onend = () => setListening(false);
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      setListening(false);
+      setSttNote("This browser cannot transcribe this language. Type the message instead. Speech confidence is separate from retrieval groundedness.");
+    }
   }
 
   function onSaved(payload: ScanPayload) {
@@ -304,22 +314,22 @@ export default function Desk() {
                     if (isLang(event.target.value)) chooseLanguage(event.target.value);
                   }}
                   className="field select mt-1.5"
-                  aria-describedby={info.support === "stub" ? "lang-note" : undefined}
+                  aria-describedby={info.translation === "machine" ? "lang-note" : undefined}
                 >
                   <optgroup label="Full support">
-                    {LANGUAGES.filter((item) => item.support === "full").map((item) => (
+                    {LANGUAGES.filter((item) => item.translation === "reviewed").map((item) => (
                       <option key={item.code} value={item.code}>{item.native}</option>
                     ))}
                   </optgroup>
-                  <optgroup label="Preview">
-                    {LANGUAGES.filter((item) => item.support === "stub").map((item) => (
+                  <optgroup label="Machine-translated">
+                    {LANGUAGES.filter((item) => item.translation === "machine").map((item) => (
                       <option key={item.code} value={item.code}>{item.native}</option>
                     ))}
                   </optgroup>
                 </select>
-                {info.support === "stub" && (
+                {info.translation === "machine" && (
                   <p id="lang-note" className="quiet mt-2">
-                    Replies in English for now. Full {info.native} support is coming.
+                    Machine-translated — pending native-speaker review.
                   </p>
                 )}
               </div>
@@ -350,7 +360,7 @@ export default function Desk() {
                 </button>
               </div>
               <p id="account-hint" className="quiet mt-4">
-                Demo account {DEMO_ACCOUNT_NO}. Any other number is reported as not found. English, isiZulu, and Sesotho use reviewed demo scripts and browser speech where the device allows. Speech confidence is not a groundedness score.
+                Demo account {DEMO_ACCOUNT_NO}. Any other number is reported as not found. English, isiZulu, and Sesotho use reviewed demo scripts. The other eight languages are machine-translated and still need native-speaker review. Browser speech is used where the device allows. Speech confidence is not a groundedness score.
               </p>
               {sttConfidence != null && (
                 <p className="quiet mt-2">
@@ -393,7 +403,9 @@ export default function Desk() {
                   <p className="text-[15px] leading-relaxed">{result.reply}</p>
                   {result.replyMode === "demo-script" && result.lang !== "en" && (
                     <p className="quiet mt-3">
-                      Demo script for the voice reply. It is not a certified translation. Playback uses the browser voice for this language when one is installed, and that is separate from the retrieval score.
+                      {languageByCode(result.lang).translation === "machine"
+                        ? "Machine-translated demo script, pending native-speaker review. Playback uses the browser voice for this language when one is installed, and otherwise an English voice. That is separate from the retrieval score."
+                        : "Demo script for the voice reply. It is not a certified translation. Playback uses the browser voice for this language when one is installed, and that is separate from the retrieval score."}
                     </p>
                   )}
                 </div>
@@ -537,6 +549,35 @@ export default function Desk() {
       </main>
     </div>
   );
+}
+
+/** Speak the demo reply. Uses an English voice when this browser has no voice for the language. */
+function speakReply(text: string, bcp: string) {
+  if (!("speechSynthesis" in window)) return;
+  let spoken = false;
+  const start = () => {
+    if (spoken) return;
+    spoken = true;
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voices = window.speechSynthesis.getVoices();
+      const prefix = bcp.toLowerCase().slice(0, 2);
+      const voice =
+        voices.find((item) => item.lang.toLowerCase().replace("_", "-").startsWith(prefix)) ??
+        voices.find((item) => item.lang.toLowerCase().startsWith("en"));
+      utterance.lang = voice?.lang ?? "en-ZA";
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      /* The written reply stays on screen. */
+    }
+  };
+  if (window.speechSynthesis.getVoices().length > 0) {
+    start();
+    return;
+  }
+  window.speechSynthesis.addEventListener("voiceschanged", start, { once: true });
+  window.setTimeout(start, 400);
 }
 
 function SpeakIcon() {
