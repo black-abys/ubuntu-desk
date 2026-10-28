@@ -271,7 +271,7 @@ export default function Desk() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
+      <main className="page-main mx-auto max-w-7xl px-4 pt-8 sm:px-6 sm:pt-12">
         <div className="mb-6 max-w-2xl sm:mb-8">
           <h1 className="text-[2.15rem] font-semibold leading-[1.05] tracking-tight sm:text-5xl">Ubuntu Desk</h1>
           <p className="mt-3 text-[17px] leading-relaxed text-muted">“I am because we are.” A municipal services demo.</p>
@@ -293,23 +293,36 @@ export default function Desk() {
           <div className="grid items-start gap-5 lg:grid-cols-12 lg:gap-6">
             <section className="card min-w-0 p-5 sm:p-6 lg:col-span-4">
               <h2 className="section-title mb-4">Resident message</h2>
-              <fieldset className="mb-5">
-                <legend className="mb-2 text-[13px] font-semibold text-muted">Official languages</legend>
-                <div className="flex flex-wrap gap-2">
-                  {LANGUAGES.map((item) => (
-                    <button
-                      key={item.code}
-                      type="button"
-                      onClick={() => chooseLanguage(item.code)}
-                      aria-pressed={lang === item.code}
-                      className="chip"
-                    >
-                      {item.label}
-                      {item.support === "stub" && <span className="soon">Soon</span>}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
+              <div className="mb-4">
+                <label htmlFor="language" className="block text-[13px] font-semibold text-muted">
+                  Language
+                </label>
+                <select
+                  id="language"
+                  value={lang}
+                  onChange={(event) => {
+                    if (isLang(event.target.value)) chooseLanguage(event.target.value);
+                  }}
+                  className="field select mt-1.5"
+                  aria-describedby={info.support === "stub" ? "lang-note" : undefined}
+                >
+                  <optgroup label="Full support">
+                    {LANGUAGES.filter((item) => item.support === "full").map((item) => (
+                      <option key={item.code} value={item.code}>{item.native}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Preview">
+                    {LANGUAGES.filter((item) => item.support === "stub").map((item) => (
+                      <option key={item.code} value={item.code}>{item.native}</option>
+                    ))}
+                  </optgroup>
+                </select>
+                {info.support === "stub" && (
+                  <p id="lang-note" className="quiet mt-2">
+                    Replies in English for now. Full {info.native} support is coming.
+                  </p>
+                )}
+              </div>
               <label className="mb-4 block text-[13px] font-semibold text-muted">
                 Account number
                 <input
@@ -321,11 +334,6 @@ export default function Desk() {
                   className="field mt-1.5 font-mono tracking-normal"
                 />
               </label>
-              {info.support === "stub" && (
-                <p className="notice mb-4 px-3.5 py-3 text-[13px] leading-relaxed">
-                  Coming soon for {info.label}. You can select it and type, but this demo will not invent a fluent {info.label} reply. The browser may still transcribe speech. Any confidence it reports is only about the transcript.
-                </p>
-              )}
               <textarea
                 value={text}
                 onChange={(event) => setText(event.target.value)}
@@ -333,7 +341,7 @@ export default function Desk() {
                 placeholder={info.support === "stub" ? `Coming soon for ${info.label}. A reviewed reply is not available yet.` : "Type a message"}
                 className="field resize-none"
               />
-              <div className="mt-4 flex items-center gap-3">
+              <div className="composer-actions mt-4 flex items-center gap-3">
                 <button type="button" onClick={mic} aria-label="Speak" className={`icon-btn ${listening ? "pulsering" : ""}`}>
                   <SpeakIcon />
                 </button>

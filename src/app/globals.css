@@ -130,6 +130,27 @@ h3 {
   box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.16);
 }
 
+.field.select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 48px;
+  padding-right: 42px;
+  background-color: #fbfbfd;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%231d1d1f' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'><path d='M4 6l4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+
+.page-main {
+  padding-bottom: max(5rem, calc(env(safe-area-inset-bottom) + 2.5rem));
+}
+
+.composer-actions {
+  scroll-margin-bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
+
 .btn-primary,
 .btn-secondary,
 .chip {
@@ -220,13 +241,6 @@ h3 {
 .chip[aria-pressed="true"]:hover,
 .chip[aria-current="page"]:hover {
   background: #000;
-}
-
-.chip .soon {
-  margin-left: 0.35rem;
-  font-size: 12px;
-  font-weight: 500;
-  opacity: 0.7;
 }
 
 .alert {
