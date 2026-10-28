@@ -126,6 +126,7 @@ Node 20 or newer.
 
 ```bash
 npm install
+npm test           # demo account overcharge is R1,633.85
 npm run dev        # http://localhost:3000
 npm run build && npm start
 ```
