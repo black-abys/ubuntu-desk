@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { documentStore, ocrClient, openedgeClient, ragClient } from "@/lib/adapters";
 import { analyseAccount } from "@/lib/billing";
+import { DEMO_ACCOUNT_NO } from "@/lib/demo";
 import type { BillContext, DocumentCategory } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -35,23 +36,27 @@ export async function POST(req: Request) {
   let analysis = null;
   let citations = null;
   let remi = null;
+  let accountError: string | null = null;
   if (extraction) {
-    const [account, rag] = await Promise.all([
-      openedgeClient.getAccount(extraction.accountNo ?? "JHB-4471-0093"),
-      ragClient.ask("Rules for estimated electricity readings and billing disputes"),
-    ]);
-    const bill: BillContext = {
-      accountNo: extraction.accountNo,
-      holder: extraction.holder,
-      period: extraction.period,
-      kwh: extraction.kwh,
-      total: extraction.total,
-      estimated: extraction.estimated,
-      simulated: extraction.simulated,
-    };
-    analysis = analyseAccount({ account, bill, citations: rag.citations });
-    citations = rag.citations;
-    remi = rag.remi;
+    const lookedUp = extraction.accountNo?.trim() || DEMO_ACCOUNT_NO;
+    const lookup = await openedgeClient.getAccount(lookedUp);
+    if (!lookup.found) {
+      accountError = `Account not found: ${lookup.accountNo}`;
+    } else {
+      const rag = await ragClient.ask("Rules for estimated electricity readings and billing disputes");
+      const bill: BillContext = {
+        accountNo: extraction.accountNo,
+        holder: extraction.holder,
+        period: extraction.period,
+        kwh: extraction.kwh,
+        total: extraction.total,
+        estimated: extraction.estimated,
+        simulated: extraction.simulated,
+      };
+      analysis = analyseAccount({ account: lookup.account, bill, citations: rag.citations });
+      citations = rag.citations;
+      remi = rag.remi;
+    }
   }
 
   const byteSize = typeof body.byteSize === "number" && Number.isFinite(body.byteSize)
@@ -69,7 +74,7 @@ export async function POST(req: Request) {
     linkedDisputeId: null,
   });
 
-  return NextResponse.json({ document, analysis, citations, remi, simulated: true });
+  return NextResponse.json({ document, analysis, citations, remi, simulated: true, accountError });
 }
 
 export async function PATCH(req: Request) {

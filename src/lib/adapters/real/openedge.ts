@@ -19,8 +19,9 @@ export const pasoeOpenEdge: OpenEdgeClient = {
   async getAccount(no) {
     assertConfigured();
     const r = await fetch(`${base}/accounts/${encodeURIComponent(no)}`, { headers: headers() });
+    if (r.status === 404) return { found: false, accountNo: no, error: "account not found" };
     if (!r.ok) throw new Error(`OpenEdge getAccount ${r.status}`);
-    return r.json();
+    return { found: true, account: await r.json() };
   },
   async createDispute(d) {
     assertConfigured();

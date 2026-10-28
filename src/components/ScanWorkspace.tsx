@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatRand } from "@/lib/billing";
+import { STATUS_LABEL } from "@/lib/labels";
 import type { BillAnalysis, Citation, Dispute, DocumentCategory, OcrExtraction, RagAnswer, VaultDocument } from "@/lib/types";
 
 const CATEGORIES: { id: DocumentCategory; label: string }[] = [
@@ -17,6 +18,7 @@ export interface ScanPayload {
   analysis: BillAnalysis | null;
   citations: Citation[] | null;
   remi: RagAnswer["remi"] | null;
+  accountError?: string | null;
 }
 
 async function readError(response: Response): Promise<string> {
@@ -83,6 +85,7 @@ export default function ScanWorkspace({
       const payload = (await response.json()) as ScanPayload;
       setActiveId(payload.document.documentId);
       setPending(null);
+      if (payload.accountError) setError(payload.accountError);
       onSaved(payload);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save the document");
@@ -274,7 +277,7 @@ export default function ScanWorkspace({
                 <select value={linkTo} onChange={(event) => setLinkTo(event.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100">
                   {disputes.length === 0 && <option value="">No cases yet</option>}
                   {disputes.map((dispute) => (
-                    <option key={dispute.disputeId} value={dispute.disputeId}>{dispute.disputeId} · {dispute.status}</option>
+                    <option key={dispute.disputeId} value={dispute.disputeId}>{dispute.disputeId} · {STATUS_LABEL[dispute.status]}</option>
                   ))}
                 </select>
               </label>

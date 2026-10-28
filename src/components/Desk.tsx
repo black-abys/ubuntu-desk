@@ -5,6 +5,7 @@ import BillPanel from "@/components/BillPanel";
 import Lifecycle from "@/components/Lifecycle";
 import ScanWorkspace, { type ScanPayload } from "@/components/ScanWorkspace";
 import Timeline from "@/components/Timeline";
+import { DEMO_ACCOUNT_NO } from "@/lib/demo";
 import { isLang, languageByCode, LANGUAGES } from "@/lib/languages";
 import { FINDING_TITLE, NEXT_STATUS, STATUS_LABEL } from "@/lib/labels";
 import type { AgentResult, BackendMode, BillAnalysis, BillContext, Citation, Dispute, DisputeDraft, Lang, RagAnswer, VaultDocument } from "@/lib/types";
@@ -26,6 +27,7 @@ export default function Desk() {
   const params = useSearchParams();
   const [workspace, setWorkspace] = useState<Workspace>("resident");
   const [lang, setLang] = useState<Lang>("zu");
+  const [accountNo, setAccountNo] = useState(DEMO_ACCOUNT_NO);
   const [text, setText] = useState(languageByCode("zu").sample);
   const [listening, setListening] = useState(false);
   const [sttConfidence, setSttConfidence] = useState<number | null>(null);
@@ -100,7 +102,12 @@ export default function Desk() {
       const response = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: message, lang: chosen, bill: billRef.current }),
+        body: JSON.stringify({
+          text: message,
+          lang: chosen,
+          accountNo: accountNo.trim() || DEMO_ACCOUNT_NO,
+          bill: billRef.current,
+        }),
       });
       if (!response.ok) throw new Error(await readError(response));
       const agentResult = (await response.json()) as AgentResult;
@@ -125,7 +132,7 @@ export default function Desk() {
     } finally {
       setBusy(false);
     }
-  }, [text, lang, params, submitDraft]);
+  }, [text, lang, accountNo, params, submitDraft]);
 
   useEffect(() => {
     if (urlApplied.current) return;
@@ -182,6 +189,15 @@ export default function Desk() {
 
   function onSaved(payload: ScanPayload) {
     setDocuments((current) => [payload.document, ...current.filter((doc) => doc.documentId !== payload.document.documentId)]);
+    if (payload.accountError) {
+      setAnalysis(null);
+      setCitations([]);
+      setRemi(null);
+      billRef.current = null;
+      setError(payload.accountError);
+      return;
+    }
+    setError(null);
     if (payload.analysis) {
       setAnalysis(payload.analysis);
       setCitations(payload.citations ?? []);
@@ -293,6 +309,17 @@ export default function Desk() {
                   ))}
                 </div>
               </fieldset>
+              <label className="mb-3 block text-[11px] uppercase tracking-widest text-slate-500">
+                Account number
+                <input
+                  value={accountNo}
+                  onChange={(event) => setAccountNo(event.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                  aria-describedby="account-hint"
+                  className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm normal-case tracking-normal text-slate-100 outline-none focus:border-emerald-400/60"
+                />
+              </label>
               {info.support === "stub" && (
                 <p className="mb-3 rounded-xl border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-50">
                   Coming soon for {info.label}. You can select it and type, but this demo will not invent a fluent {info.label} reply. The browser may still transcribe speech. Any confidence it reports is only about the transcript.
@@ -311,8 +338,8 @@ export default function Desk() {
                   {busy ? "Agent working…" : "Send to Ubuntu Desk"}
                 </button>
               </div>
-              <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-                Demo account JHB-4471-0093. English, isiZulu, and Sesotho use reviewed demo scripts and browser speech where the device allows. Speech confidence is not a groundedness score.
+              <p id="account-hint" className="mt-3 text-[11px] leading-relaxed text-slate-500">
+                Demo account {DEMO_ACCOUNT_NO}. Any other number is reported as not found. English, isiZulu, and Sesotho use reviewed demo scripts and browser speech where the device allows. Speech confidence is not a groundedness score.
               </p>
               {sttConfidence != null && (
                 <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
@@ -320,7 +347,7 @@ export default function Desk() {
                 </p>
               )}
               {sttNote && <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{sttNote}</p>}
-              {result && (
+              {result?.account && (
                 <div className="mt-6">
                   <h3 className="mb-2 text-xs uppercase tracking-widest text-slate-500">Simulated account record</h3>
                   <div className="rounded-xl border border-white/10 bg-black/30 p-3 font-mono text-xs">
@@ -377,6 +404,7 @@ export default function Desk() {
                     I confirm Ubuntu Desk may submit this dispute using the simulated demo records.
                   </label>
                   {ackNote && <p className="mt-2 text-[11px] text-amber-200">{ackNote}</p>}
+                  {error && <p className="mt-2 text-xs leading-relaxed text-rose-200">{error}</p>}
                   <button type="submit" disabled={!ack || submitting} className="mt-3 w-full rounded-xl bg-emerald-400 py-2 text-sm font-semibold text-black disabled:opacity-50">
                     {submitting ? "Submitting…" : "Submit dispute"}
                   </button>
@@ -384,7 +412,7 @@ export default function Desk() {
               )}
               {done && result?.dispute && (
                 <div className="mt-4 space-y-3 rounded-xl border border-emerald-400/30 bg-black/30 p-4">
-                  <div className="text-xs uppercase tracking-widest text-emerald-300">Case {result.dispute.disputeId}</div>
+                  <div className="text-xs uppercase tracking-widest text-emerald-300">Case {result.dispute.disputeId}{result.dispute.simulated ? " · simulated" : ""}</div>
                   <Lifecycle status={result.dispute.status} />
                   <p className="text-[11px] text-slate-500">Stored on the simulated OpenEdge adapter. Collection has not been suspended.</p>
                   <button type="button" onClick={() => setWorkspace("dashboard")} className="text-xs text-emerald-300 underline-offset-2 hover:underline">Open the municipal dashboard</button>
