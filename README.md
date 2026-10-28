@@ -13,8 +13,8 @@ Residents query and dispute municipal bills. They ask in their own language, see
 ## What the demo does
 
 1. The resident picks one of the 11 official languages and sends text or speech.
-2. A rule-based agent loads a **simulated** account and **fixture** by-law clauses, then shows its steps. It does that only when the message is about a bill or an account (including the English, isiZulu, and Sesotho demo lines). Anything else gets a short reply about what the desk can help with, and no billing finding.
-3. English, isiZulu, and Sesotho get a reviewed demo script. The browser speaks it when that voice is available. The other eight languages get an English “coming soon” placeholder — the app does not invent a fluent reply.
+2. A rule-based agent loads a **simulated** account and **fixture** by-law clauses, then shows its steps. It does that only when the message is about a bill or an account, in any of the 11 official languages. A greeting on its own gets a short reply about what the desk can help with, and no billing finding.
+3. English, isiZulu, and Sesotho get a reviewed demo script. Afrikaans, isiNdebele, isiXhosa, Sepedi, Setswana, siSwati, Tshivenda, and Xitsonga get a static machine translation, labelled as pending native-speaker review. The browser speaks the reply when that voice is available, and otherwise uses an English voice. Typing still works when speech recognition does not support the language.
 4. Scan & Documents accepts a camera frame, an upload, or the bundled sample bill. OCR is **simulated**. The file is kept in an in-memory vault and can be linked to a case.
 5. When a bill is present, the screen shows each calculation step and the tariff clause. A mismatch is a **potential billing error** until records confirm it.
 6. The resident must tick a confirmation before a dispute is submitted. The server rejects the dispute without that confirmation, and it rejects an amount that is zero, negative, non-numeric, or above the calculated potential overcharge for the account. Case ids are marked as demo ids (`DEMO-DSP-…`). The case then shows draft → submitted (simulated) → under review → resolved. Staff status changes in the dashboard are simulated too. The disputes API sets `simulated: true`.
@@ -28,16 +28,16 @@ Speech-recognition confidence (from the browser, when it reports one) is shown s
 | `en` | English | Yes | Browser speech where available | Reviewed demo script |
 | `zu` | isiZulu | Yes | Browser speech where available | Reviewed demo script |
 | `st` | Sesotho | Yes | Browser speech where available | Reviewed demo script |
-| `af` | Afrikaans | Selectable | Browser may transcribe | Coming soon — English placeholder |
-| `xh` | isiXhosa | Selectable | Browser may transcribe | Coming soon — English placeholder |
-| `nso` | Sepedi | Selectable | Browser may transcribe | Coming soon — English placeholder |
-| `tn` | Setswana | Selectable | Browser may transcribe | Coming soon — English placeholder |
-| `ss` | siSwati | Selectable | Browser may transcribe | Coming soon — English placeholder |
-| `ve` | Tshivenda | Selectable | Browser may transcribe | Coming soon — English placeholder |
-| `ts` | Xitsonga | Selectable | Browser may transcribe | Coming soon — English placeholder |
-| `nr` | isiNdebele | Selectable | Browser may transcribe | Coming soon — English placeholder |
+| `af` | Afrikaans | Yes | Browser voice, or English voice | Machine-translated, pending review |
+| `xh` | isiXhosa | Yes | Browser voice, or English voice | Machine-translated, pending review |
+| `nso` | Sepedi | Yes | Browser voice, or English voice | Machine-translated, pending review |
+| `tn` | Setswana | Yes | Browser voice, or English voice | Machine-translated, pending review |
+| `ss` | siSwati | Yes | Browser voice, or English voice | Machine-translated, pending review |
+| `ve` | Tshivenda | Yes | Browser voice, or English voice | Machine-translated, pending review |
+| `ts` | Xitsonga | Yes | Browser voice, or English voice | Machine-translated, pending review |
+| `nr` | isiNdebele | Yes | Browser voice, or English voice | Machine-translated, pending review |
 
-isiZulu and Sesotho lines are demo scripts for the prototype, not certified translations.
+isiZulu and Sesotho lines are demo scripts for the prototype, not certified translations. The other eight official languages are machine translations committed in the repo. They are not certified translations and have not had native-speaker review.
 
 ## Scan and documents
 
@@ -106,8 +106,8 @@ flowchart LR
 | OCR | Simulated. It does not read pixels. The sample bill and labelled text in a file are the only sources. |
 | Document vault | Simulated process memory. It is cleared when the server restarts. |
 | Dispute submission | Simulated. Ids look like `DEMO-DSP-20961`, the response includes `simulated: true`, and the submitted state is labelled simulated. Nothing is sent to a municipality. |
-| Speech | The browser’s Web Speech API, when the device has a voice. A recognition score is the browser’s, not a municipal score. |
-| Translations | English, isiZulu, and Sesotho replies are demo scripts. They still need native-speaker review and are not certified translations. The other eight official languages stay on an English placeholder. |
+| Speech | The browser’s Web Speech API. If that browser has no voice or recogniser for the selected language, playback uses an English voice and recognition asks the resident to type. A recognition score is the browser’s, not a municipal score. |
+| Translations | English, isiZulu, and Sesotho replies are reviewed demo scripts. They are not certified translations. Afrikaans, isiNdebele, isiXhosa, Sepedi, Setswana, siSwati, Tshivenda, and Xitsonga are static machine translations, labelled in the UI as pending native-speaker review. There is no live translation API. |
 
 ## Known limitations
 
@@ -117,7 +117,8 @@ flowchart LR
 - OpenEdge, Agentic RAG, OCR, the document vault, and dispute submission are simulated. Restarting the server drops the vault and any disputes created in that process. The three seed cases come back from code.
 - A submitted case does not file anything with a municipality and does not suspend collection.
 - isiZulu and Sesotho demo scripts, including the short “what I can help with” lines, have not had a fresh native-speaker review in this change. Do not present them as certified translations.
-- Speech depends on the browser and the voices installed on the device.
+- Afrikaans, isiNdebele, isiXhosa, Sepedi, Setswana, siSwati, Tshivenda, and Xitsonga are machine translations. The screen says so. They are not certified translations.
+- Speech depends on the browser and the voices installed on the device. An unsupported language falls back to typing or an English voice.
 - There is no resident login. Do not enter real personal information.
 
 ## Setup
@@ -143,7 +144,8 @@ Open the app locally and use one of these URLs. `confirm=1` is a presentation sh
 | `/?autorun=1&lang=zu` | Runs the isiZulu demo and stops on the confirmation checkbox |
 | `/?autorun=1&lang=st&fast=1` | Sesotho, short delays |
 | `/?autorun=1&lang=en&confirm=1&fast=1` | English, and the autorun URL confirms the dispute |
-| `/?lang=xh` | isiXhosa selected, coming-soon path |
+| `/?autorun=1&lang=af&fast=1` | Afrikaans machine translation, stops on the confirmation checkbox |
+| `/?autorun=1&lang=xh&fast=1` | isiXhosa machine translation, stops on the confirmation checkbox |
 | `/?workspace=scan&sample=1` | Opens Scan & Documents and loads the sample bill |
 | `/?workspace=dashboard` | Simulated case list |
 

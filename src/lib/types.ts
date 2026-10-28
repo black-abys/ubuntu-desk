@@ -193,7 +193,7 @@ export interface DisputeDraft {
 export interface AgentResult {
   transcript: string;
   lang: Lang;
-  /** full = reviewed demo reply; stub = coming-soon placeholder, no invented translation. */
+  /** full = a demo script exists (reviewed or machine-translated); stub = English placeholder. */
   support: "full" | "stub";
   simulated: true;
   steps: AgentStep[];
